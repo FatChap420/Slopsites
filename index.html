@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pulse | Daily & Weekly Tracker</title>
+  
+  <!-- Web App / PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pulse Track">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text y='.9em' font-size='70' x='15'>⚡</text></svg>">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --border: #334155;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 90px; }
+
+    /* Header & Quick Counters */
+    header { background: var(--card-bg); padding: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .date-display { font-weight: 700; font-size: 1.1rem; color: var(--accent-cyan); }
+    
+    .quick-counters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .counter-btn {
+      background: #0284c715; border: 1px solid #0284c740; padding: 10px; border-radius: var(--radius);
+      display: flex; justify-content: space-between; align-items: center; color: var(--text); cursor: pointer;
+    }
+    .counter-btn.vape { background: #8b5cf615; border-color: #8b5cf640; }
+    .counter-btn.pushup { background: #10b98115; border-color: #10b98140; grid-column: span 2; }
+    .count-badge { background: var(--border); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+
+    /* Main Navigation */
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+    
+    nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg);
+      display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--border);
+    }
+    .nav-item { border: none; background: none; color: var(--text-dim); font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+    .nav-item.active { color: var(--accent-cyan); font-weight: bold; }
+    .nav-icon { font-size: 1.3rem; }
+
+    /* Cards & Form Components */
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    
+    label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 6px; margin-top: 10px; }
+    input, select, textarea {
+      width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.95rem; outline: none;
+    }
+    input[type="range"] { accent-color: var(--accent-cyan); }
+
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent-cyan);
+      color: #000; font-weight: bold; font-size: 0.95rem; margin-top: 12px; cursor: pointer;
+    }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-danger { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; width: auto; margin-top: 0; cursor: pointer; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip { background: var(--border); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+    .chip.active { background: var(--accent-amber); color: #000; font-weight: bold; }
+
+    /* Dashboard & Metrics */
+    .stat-box { text-align: center; padding: 12px 8px; background: var(--bg); border-radius: 8px; }
+    .stat-val { font-size: 1.3rem; font-weight: bold; color: var(--accent-cyan); }
+    .stat-lbl { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+
+    /* Comparison Delta Badges */
+    .delta { font-size: 0.72rem; font-weight: 600; margin-top: 4px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .delta.neutral { background: #334155; color: var(--text-dim); }
+    .delta.up-good { background: #10b98120; color: var(--accent-green); }
+    .delta.down-good { background: #10b98120; color: var(--accent-green); }
+    .delta.up-warn { background: #f43f5e20; color: var(--accent-rose); }
+    .delta.down-warn { background: #f43f5e20; color: var(--accent-rose); }
+
+    .log-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+    .log-item:last-child { border: none; }
+    
+    /* Comparison Table UI */
+    .compare-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .compare-header { font-weight: bold; color: var(--accent-cyan); border-bottom: 2px solid var(--border); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Persistent Bar -->
+  <header>
+    <div class="header-top">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="date-display" id="currentDateDisplay">Today</div>
+          <button id="newDayBtn" class="btn" style="margin: 0; padding: 4px 10px; font-size: 0.75rem; width: auto; background: var(--accent-amber); display: none;" onclick="startNewDay()">☀️ Wake Up (Next Day)</button>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-dim);" id="activeLogDisplay"></span>
+      </div>
+    </div>
+    <div class="quick-counters">
+      <div class="counter-btn" onclick="adjustCount('zyn', 1)">
+        <span>❄️ Zyn Pouch</span>
+        <span class="count-badge" id="headerZynCount">0</span>
+      </div>
+      <div class="counter-btn vape" onclick="adjustCount('vape', 1)">
+        <span>🌿 Vape Bowls</span>
+        <span class="count-badge" id="headerVapeCount">0</span>
+      </div>
+      <div class="counter-btn pushup" onclick="adjustCount('pushups', 5)">
+        <span>💪 Pushups (+5)</span>
+        <span class="count-badge" id="headerPushupCount">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TAB 1: DASHBOARD -->
+  <section id="dashboard" class="tab-content active">
+    <!-- Today's Snapshot -->
+    <div class="card">
+      <div class="card-title">📈 Today's Snapshot</div>
+      <div class="grid-2">
+        <div class="stat-box">
+          <div class="stat-val" id="dashWeight">--</div>
+          <div class="stat-lbl">Today's Weight</div>
+          <div id="deltaWeight" class="delta neutral">-- vs avg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="dashRecovery">--/10</div>
+          <div class="stat-lbl">Recovery Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="dashProtein">0g</div>
+          <div class="stat-lbl">Protein Ingested</div>
+          <div id="deltaProtein" class="delta neutral">-- vs avg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="dashCalories">0</div>
+          <div class="stat-lbl">Total Calories</div>
+          <div id="deltaCals" class="delta neutral">-- vs avg</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-Day Rolling Averages & Delta Comparison -->
+    <div class="card">
+      <div class="card-title">
+        <span>🗓️ 7-Day Rolling Averages</span>
+        <span style="font-size: 0.75rem; color: var(--accent-cyan);" id="activeDaysCount">0 active days</span>
+      </div>
+      <div class="grid-3">
+        <div class="stat-box">
+          <div class="stat-val" id="avgWeight">--</div>
+          <div class="stat-lbl">Avg Weight</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="avgSleep">0h</div>
+          <div class="stat-lbl">Avg Sleep</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="weeklyWorkouts">0/7</div>
+          <div class="stat-lbl">Days Trained</div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top: 10px;">
+        <div class="stat-box">
+          <div class="stat-val" id="avgZyn">0</div>
+          <div class="stat-lbl">Avg Zyns/Day</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="avgVape">0</div>
+          <div class="stat-lbl">Avg Vape Bowls/Day</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Today's Summary Logs</div>
+      <div id="dashboardLogs" style="color: var(--text-dim); font-size: 0.9rem;">No activities logged yet today.</div>
+    </div>
+  </section>
+
+  <!-- TAB 2: WORKOUT & RECOVERY -->
+  <section id="training" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚖️ Weight Tracker</div>
+      <label>Log Body Weight</label>
+      <div class="grid-2">
+        <input type="number" id="weightInput" step="0.1" placeholder="e.g. 74.5">
+        <button class="btn" style="margin-top:0;" onclick="saveWeight()">Log Weight</button>
+      </div>
+      <div id="weightLogDisplay" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-dim);">No weight logged today.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏋️ Log Training Session</div>
+      <label>Session Type</label>
+      <select id="workoutType">
+        <option value="Calisthenics">Calisthenics / Bodyweight</option>
+        <option value="Strength Training">Weights / Strength</option>
+        <option value="Mace Work">Mace / Flow</option>
+        <option value="Cardio">Cardio / Conditioning</option>
+        <option value="Rest Day">Rest / Active Recovery</option>
+      </select>
+
+      <label>Workout Intensity (1 - 10): <span id="intensityVal">7</span></label>
+      <input type="range" id="workoutIntensity" min="1" max="10" value="7" oninput="document.getElementById('intensityVal').innerText = this.value">
+
+      <label>Workout Duration (Minutes)</label>
+      <input type="number" id="workoutDuration" placeholder="45">
+
+      <label>Notes & Exercises</label>
+      <textarea id="workoutNotes" rows="3" placeholder="Pushups, Cossack squats, dip negatives..."></textarea>
+
+      <button class="btn" onclick="saveWorkout()">Save Workout</button>
+      <div id="workoutLogStatus" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔋 Recovery & Readiness</div>
+      <div class="grid-2">
+        <div>
+          <label>Sleep Hours</label>
+          <input type="number" id="sleepHours" step="0.5" placeholder="7.5">
+        </div>
+        <div>
+          <label>Energy (1-10)</label>
+          <input type="number" id="energyLevel" min="1" max="10" placeholder="8">
+        </div>
+      </div>
+      <label>Muscle Soreness (1 = None, 10 = Severe)</label>
+      <input type="range" id="sorenessLevel" min="1" max="10" value="3">
+      
+      <button class="btn btn-secondary" onclick="saveRecovery()">Update Recovery Data</button>
+      <div id="recoveryLogStatus" style="margin-top: 10px;"></div>
+    </div>
+  </section>
+
+  <!-- TAB 3: NUTRITION & FOOD -->
+  <section id="nutrition" class="tab-content">
+    <div class="card">
+      <div class="card-title">⚡ Quick-Add Meals</div>
+      <div class="chip-container" id="quickFoodChips"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🥗 Log Custom Food</div>
+      <label>Food / Meal Description</label>
+      <input type="text" id="foodName" placeholder="e.g., Protein Shake & Oats">
+      
+      <div class="grid-2">
+        <div>
+          <label>Calories (kcal)</label>
+          <input type="number" id="foodCals" placeholder="450">
+        </div>
+        <div>
+          <label>Protein (g)</label>
+          <input type="number" id="foodProtein" placeholder="35">
+        </div>
+      </div>
+      <button class="btn" onclick="addFoodItem()">Log Food</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🍽️ Eaten Today</div>
+      <div id="todayFoodList"></div>
+    </div>
+  </section>
+
+  <!-- TAB 4: SUBSTANCES & HABITS -->
+  <section id="substances" class="tab-content">
+    <div class="card">
+      <div class="card-title">❄️ Zyn Tracker</div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <button class="btn btn-secondary" style="width: 40px;" onclick="adjustCount('zyn', -1)">-</button>
+        <span style="font-size: 2rem; font-weight: bold;" id="substanceZynCount">0</span>
+        <button class="btn" style="width: 40px;" onclick="adjustCount('zyn', 1)">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🌿 Weed Vape Bowls Tracker</div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <button class="btn btn-secondary" style="width: 40px;" onclick="adjustCount('vape', -1)">-</button>
+        <span style="font-size: 2rem; font-weight: bold;" id="substanceVapeCount">0</span>
+        <button class="btn" style="width: 40px; background: var(--accent-purple); color: #fff;" onclick="adjustCount('vape', 1)">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💪 Pushups Counter</div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <button class="btn btn-secondary" style="width: 50px;" onclick="adjustCount('pushups', -5)">-5</button>
+        <button class="btn btn-secondary" style="width: 40px;" onclick="adjustCount('pushups', -1)">-</button>
+        <span style="font-size: 2rem; font-weight: bold;" id="substancePushupCount">0</span>
+        <button class="btn btn-secondary" style="width: 40px;" onclick="adjustCount('pushups', 1)">+</button>
+        <button class="btn" style="width: 50px; margin-top:0;" onclick="adjustCount('pushups', 5)">+5</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 5: COMPARE & SETTINGS -->
+  <section id="settings" class="tab-content">
+    <div class="card">
+      <div class="card-title">🔍 Compare Dates / History</div>
+      <label>Select Date to Compare against Today</label>
+      <input type="date" id="compareDatePicker" onchange="renderComparisonTable()">
+
+      <div id="comparisonTableContainer" style="margin-top: 14px;">
+        <div style="color: var(--text-dim); font-size: 0.85rem;">Pick a date above to compare logged metrics side-by-side.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Add Custom Quick Food Preset</div>
+      <input type="text" id="newPresetName" placeholder="Preset Name (e.g., Vegan Shake)">
+      <div class="grid-2">
+        <input type="number" id="newPresetCals" placeholder="Calories">
+        <input type="number" id="newPresetProtein" placeholder="Protein (g)">
+      </div>
+      <button class="btn btn-secondary" onclick="addCustomPreset()">Save Preset</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💾 Backup & Data Management</div>
+      <button class="btn btn-secondary" onclick="exportData()">Export JSON Backup</button>
+      
+      <!-- Added Import JSON Elements -->
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="document.getElementById('importFile').click()">Import JSON Backup</button>
+      <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+      
+      <button class="btn btn-secondary" style="background: #ef444420; color: #ef4444; margin-top: 8px;" onclick="clearData()">Reset All Data</button>
+    </div>
+  </section>
+
+  <!-- Bottom Navigation Bar -->
+  <nav>
+    <button class="nav-item active" onclick="switchTab('dashboard', this)">
+      <span class="nav-icon">📊</span>Dashboard
+    </button>
+    <button class="nav-item" onclick="switchTab('training', this)">
+      <span class="nav-icon">💪</span>Train
+    </button>
+    <button class="nav-item" onclick="switchTab('nutrition', this)">
+      <span class="nav-icon">🥗</span>Food
+    </button>
+    <button class="nav-item" onclick="switchTab('substances', this)">
+      <span class="nav-icon">🌿</span>Habits
+    </button>
+    <button class="nav-item" onclick="switchTab('settings', this)">
+      <span class="nav-icon">🔍</span>Compare
+    </button>
+  </nav>
+
+  <script>
+    // Get the actual, current calendar date string in YYYY-MM-DD format
+    const getRealCurrentDateString = () => {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Load data or initialize empty state
+    let appData = JSON.parse(localStorage.getItem('pulse_app_data')) || {
+      logs: {},
+      presets: [
+        { name: "Oats & Milk", cals: 350, protein: 12 },
+        { name: "Protein Shake", cals: 200, protein: 30 },
+        { name: "Beans & Mushrooms", cals: 400, protein: 20 }
+      ],
+      activeLogDate: getRealCurrentDateString() // Setup initial log date
+    };
+
+    // Backwards compatibility for existing data
+    if (!appData.activeLogDate) {
+      appData.activeLogDate = getRealCurrentDateString();
+    }
+
+    // Rather than returning the clock date, we return the manual active log date
+    const getTodayKey = () => appData.activeLogDate;
+
+    function getTodayLog() {
+      const today = getTodayKey();
+      if (!appData.logs[today]) {
+        appData.logs[today] = {
+          zyn: 0, vape: 0, pushups: 0,
+          weight: null,
+          workout: null,
+          recovery: { sleep: 0, energy: 0, soreness: 3 },
+          food: []
+        };
+      }
+      return appData.logs[today];
+    }
+
+    function saveData() {
+      localStorage.setItem('pulse_app_data', JSON.stringify(appData));
+      renderUI();
+    }
+
+    function startNewDay() {
+      appData.activeLogDate = getRealCurrentDateString();
+      saveData();
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function adjustCount(type, delta) {
+      const log = getTodayLog();
+      log[type] = Math.max(0, (log[type] || 0) + delta);
+      saveData();
+    }
+
+    function saveWeight() {
+      const log = getTodayLog();
+      const val = parseFloat(document.getElementById('weightInput').value);
+      if (!isNaN(val)) {
+        log.weight = val;
+        document.getElementById('weightInput').value = '';
+        saveData();
+        alert('Weight logged successfully!');
+      }
+    }
+
+    function saveWorkout() {
+      const log = getTodayLog();
+      log.workout = {
+        type: document.getElementById('workoutType').value,
+        intensity: document.getElementById('workoutIntensity').value,
+        duration: document.getElementById('workoutDuration').value || 0,
+        notes: document.getElementById('workoutNotes').value
+      };
+      saveData();
+      alert('Workout logged!');
+    }
+
+    function undoWorkout() {
+      const log = getTodayLog();
+      log.workout = null;
+      saveData();
+    }
+
+    function saveRecovery() {
+      const log = getTodayLog();
+      log.recovery = {
+        sleep: parseFloat(document.getElementById('sleepHours').value) || 0,
+        energy: parseInt(document.getElementById('energyLevel').value) || 5,
+        soreness: parseInt(document.getElementById('sorenessLevel').value) || 1
+      };
+      saveData();
+      alert('Recovery status updated!');
+    }
+
+    function undoRecovery() {
+      const log = getTodayLog();
+      log.recovery = { sleep: 0, energy: 0, soreness: 3 };
+      document.getElementById('sleepHours').value = '';
+      document.getElementById('energyLevel').value = '';
+      saveData();
+    }
+
+    function addFoodItem(name = null, cals = null, protein = null) {
+      const log = getTodayLog();
+      const foodName = name || document.getElementById('foodName').value;
+      const calories = parseInt(cals || document.getElementById('foodCals').value) || 0;
+      const prot = parseInt(protein || document.getElementById('foodProtein').value) || 0;
+
+      if (!foodName) return;
+
+      log.food.push({ name: foodName, cals: calories, protein: prot });
+      document.getElementById('foodName').value = '';
+      document.getElementById('foodCals').value = '';
+      document.getElementById('foodProtein').value = '';
+      saveData();
+    }
+
+    function removeFoodItem(index) {
+      const log = getTodayLog();
+      log.food.splice(index, 1);
+      saveData();
+    }
+
+    function addCustomPreset() {
+      const name = document.getElementById('newPresetName').value;
+      const cals = parseInt(document.getElementById('newPresetCals').value) || 0;
+      const prot = parseInt(document.getElementById('newPresetProtein').value) || 0;
+      if (name) {
+        appData.presets.push({ name, cals, protein: prot });
+        document.getElementById('newPresetName').value = '';
+        document.getElementById('newPresetCals').value = '';
+        document.getElementById('newPresetProtein').value = '';
+        saveData();
+      }
+    }
+
+    // --- Weekly Averages & Analytics Calculations ---
+    function getPast7DaysStats() {
+      const today = new Date();
+      let totalZyn = 0, totalVape = 0, totalPushups = 0, totalSleep = 0, totalCals = 0, totalProtein = 0, totalWeight = 0;
+      let weightDaysCount = 0, workoutDaysCount = 0, activeDays = 0;
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const key = `${year}-${month}-${day}`;
+        const log = appData.logs[key];
+
+        if (log) {
+          activeDays++;
+          totalZyn += log.zyn || 0;
+          totalVape += log.vape || 0;
+          totalPushups += log.pushups || 0;
+          if (log.weight) {
+            totalWeight += log.weight;
+            weightDaysCount++;
+          }
+          if (log.recovery && log.recovery.sleep) totalSleep += log.recovery.sleep;
+          if (log.workout && log.workout.type !== "Rest Day") workoutDaysCount++;
+          if (log.food) {
+            totalCals += log.food.reduce((sum, item) => sum + item.cals, 0);
+            totalProtein += log.food.reduce((sum, item) => sum + item.protein, 0);
+          }
+        }
+      }
+
+      const divisor = activeDays || 1;
+      return {
+        activeDays,
+        avgZyn: (totalZyn / divisor).toFixed(1),
+        avgVape: (totalVape / divisor).toFixed(1),
+        avgPushups: (totalPushups / divisor).toFixed(1),
+        avgSleep: (totalSleep / divisor).toFixed(1),
+        avgWeight: weightDaysCount > 0 ? (totalWeight / weightDaysCount).toFixed(1) : '--',
+        avgCals: Math.round(totalCals / divisor),
+        avgProtein: Math.round(totalProtein / divisor),
+        workoutDaysCount
+      };
+    }
+
+    function renderComparisonTable() {
+      const selectedDate = document.getElementById('compareDatePicker').value;
+      const container = document.getElementById('comparisonTableContainer');
+      if (!selectedDate) return;
+
+      const todayLog = getTodayLog();
+      const targetLog = appData.logs[selectedDate] || { zyn: 0, vape: 0, pushups: 0, weight: null, workout: null, recovery: {}, food: [] };
+
+      const todayCals = todayLog.food ? todayLog.food.reduce((s, i) => s + i.cals, 0) : 0;
+      const targetCals = targetLog.food ? targetLog.food.reduce((s, i) => s + i.cals, 0) : 0;
+
+      const todayProt = todayLog.food ? todayLog.food.reduce((s, i) => s + i.protein, 0) : 0;
+      const targetProt = targetLog.food ? targetLog.food.reduce((s, i) => s + i.protein, 0) : 0;
+
+      container.innerHTML = `
+        <div class="compare-row compare-header">
+          <div>Metric</div>
+          <div>Active</div>
+          <div>${selectedDate}</div>
+        </div>
+        <div class="compare-row">
+          <div>⚖️ Weight</div>
+          <div>${todayLog.weight ? todayLog.weight : '--'}</div>
+          <div>${targetLog.weight ? targetLog.weight : '--'}</div>
+        </div>
+        <div class="compare-row">
+          <div>🏋️ Session</div>
+          <div>${todayLog.workout ? todayLog.workout.type : 'Rest'}</div>
+          <div>${targetLog.workout ? targetLog.workout.type : 'Rest'}</div>
+        </div>
+        <div class="compare-row">
+          <div>🔋 Sleep</div>
+          <div>${todayLog.recovery ? todayLog.recovery.sleep || '--' : '--'}h</div>
+          <div>${targetLog.recovery ? targetLog.recovery.sleep || '--' : '--'}h</div>
+        </div>
+        <div class="compare-row">
+          <div>🔥 Calories</div>
+          <div>${todayCals}</div>
+          <div>${targetCals}</div>
+        </div>
+        <div class="compare-row">
+          <div>🥩 Protein</div>
+          <div>${todayProt}g</div>
+          <div>${targetProt}g</div>
+        </div>
+        <div class="compare-row">
+          <div>❄️ Zyns</div>
+          <div>${todayLog.zyn || 0}</div>
+          <div>${targetLog.zyn || 0}</div>
+        </div>
+        <div class="compare-row">
+          <div>🌿 Vape Bowls</div>
+          <div>${todayLog.vape || 0}</div>
+          <div>${targetLog.vape || 0}</div>
+        </div>
+        <div class="compare-row">
+          <div>💪 Pushups</div>
+          <div>${todayLog.pushups || 0}</div>
+          <div>${targetLog.pushups || 0}</div>
+        </div>
+      `;
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+      const anchor = document.createElement('a');
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", `pulse_backup_${getRealCurrentDateString()}.json`);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    // Added Import Data Function
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsedData = JSON.parse(e.target.result);
+          if (parsedData && parsedData.logs) {
+            appData = parsedData;
+            saveData();
+            alert('Data imported successfully!');
+            location.reload();
+          } else {
+            alert('Invalid backup file format.');
+          }
+        } catch (err) {
+          alert('Error reading JSON file.');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearData() {
+      if (confirm("Are you sure you want to clear all logged history?")) {
+        localStorage.removeItem('pulse_app_data');
+        location.reload();
+      }
+    }
+
+    // Render Master UI
+    function renderUI() {
+      const realDateStr = getRealCurrentDateString();
+      document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+      // Handle the "Wake Up / Next Day" button visibility
+      const newDayBtn = document.getElementById('newDayBtn');
+      if (appData.activeLogDate !== realDateStr) {
+        newDayBtn.style.display = 'block';
+      } else {
+        newDayBtn.style.display = 'none';
+      }
+
+      // Display the current log target so the user always knows where data is going
+      document.getElementById('activeLogDisplay').innerText = `Currently logging to: ${appData.activeLogDate}`;
+
+      const log = getTodayLog();
+      const stats = getPast7DaysStats();
+
+      // Update Counters
+      document.getElementById('headerZynCount').innerText = log.zyn;
+      document.getElementById('substanceZynCount').innerText = log.zyn;
+      document.getElementById('headerVapeCount').innerText = log.vape;
+      document.getElementById('substanceVapeCount').innerText = log.vape;
+      document.getElementById('headerPushupCount').innerText = log.pushups || 0;
+      document.getElementById('substancePushupCount').innerText = log.pushups || 0;
+
+      // Weight UI updates
+      document.getElementById('dashWeight').innerText = log.weight ? log.weight : '--';
+      document.getElementById('weightLogDisplay').innerText = log.weight ? `Logged today: ${log.weight}` : 'No weight logged today.';
+
+      // Workout Log Status & Undo
+      const workoutStatusEl = document.getElementById('workoutLogStatus');
+      if (log.workout) {
+        workoutStatusEl.innerHTML = `<div style="font-size:0.85rem; color:var(--accent-green); margin-bottom:6px;">Logged: ${log.workout.type} (${log.workout.duration}m)</div><button class="btn-danger" onclick="undoWorkout()">Undo Workout</button>`;
+      } else {
+        workoutStatusEl.innerHTML = '';
+      }
+
+      // Recovery Log Status & Undo
+      const recoveryStatusEl = document.getElementById('recoveryLogStatus');
+      if (log.recovery && log.recovery.sleep > 0) {
+        recoveryStatusEl.innerHTML = `<button class="btn-danger" onclick="undoRecovery()">Undo Sleep/Recovery Log</button>`;
+      } else {
+        recoveryStatusEl.innerHTML = '';
+      }
+      
+      const recScore = (log.recovery && log.recovery.sleep > 0) ? Math.round(((11 - log.recovery.soreness) + log.recovery.energy) / 2) : '--';
+      document.getElementById('dashRecovery').innerText = `${recScore}/10`;
+
+      const totalCals = log.food ? log.food.reduce((sum, item) => sum + item.cals, 0) : 0;
+      const totalProtein = log.food ? log.food.reduce((sum, item) => sum + item.protein, 0) : 0;
+      document.getElementById('dashCalories').innerText = totalCals;
+      document.getElementById('dashProtein').innerText = `${totalProtein}g`;
+
+      // Update 7-Day Rolling Averages
+      document.getElementById('activeDaysCount').innerText = `${stats.activeDays} days logged`;
+      document.getElementById('avgWeight').innerText = stats.avgWeight;
+      document.getElementById('avgSleep').innerText = `${stats.avgSleep}h`;
+      document.getElementById('avgZyn').innerText = stats.avgZyn;
+      document.getElementById('avgVape').innerText = stats.avgVape;
+      document.getElementById('weeklyWorkouts').innerText = `${stats.workoutDaysCount}/7`;
+
+      // Weight Delta vs Average
+      if (log.weight && stats.avgWeight !== '--') {
+        const diffWeight = (log.weight - parseFloat(stats.avgWeight)).toFixed(1);
+        document.getElementById('deltaWeight').innerText = `${diffWeight >= 0 ? '+' : ''}${diffWeight} vs avg`;
+        document.getElementById('deltaWeight').className = `delta neutral`;
+      } else {
+        document.getElementById('deltaWeight').innerText = `-- vs avg`;
+      }
+
+      // Calculate & Render Protein/Cals Deltas vs Averages
+      const diffCals = totalCals - stats.avgCals;
+      document.getElementById('deltaCals').innerText = `${diffCals >= 0 ? '+' : ''}${diffCals} kcal vs avg`;
+
+      const diffProt = totalProtein - stats.avgProtein;
+      document.getElementById('deltaProtein').innerText = `${diffProt >= 0 ? '+' : ''}${diffProt}g vs avg`;
+      document.getElementById('deltaProtein').className = `delta ${diffProt >= 0 ? 'up-good' : 'down-warn'}`;
+
+      // Render Food List & Presets with Undo capability
+      const foodContainer = document.getElementById('todayFoodList');
+      foodContainer.innerHTML = (!log.food || log.food.length === 0) ? '<span style="color:var(--text-dim);">No meals logged.</span>' : '';
+      if (log.food) {
+        log.food.forEach((item, index) => {
+          foodContainer.innerHTML += `
+            <div class="log-item">
+              <div><strong>${item.name}</strong><br><small style="color:var(--text-dim);">${item.cals} kcal | ${item.protein}g protein</small></div>
+              <button class="btn-danger" onclick="removeFoodItem(${index})">Undo</button>
+            </div>`;
+        });
+      }
+
+      const chipContainer = document.getElementById('quickFoodChips');
+      chipContainer.innerHTML = '';
+      appData.presets.forEach(p => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerText = `+ ${p.name}`;
+        chip.onclick = () => addFoodItem(p.name, p.cals, p.protein);
+        chipContainer.appendChild(chip);
+      });
+
+      // Render Dashboard Log Overview
+      const dashLogs = document.getElementById('dashboardLogs');
+      dashLogs.innerHTML = `
+        <div class="log-item" style="border:none; padding:4px 0;">⚖️ Weight: <strong>${log.weight ? log.weight : 'Not logged'}</strong></div>
+        <div class="log-item" style="border:none; padding:4px 0;">🏋️ Workout: <strong>${log.workout ? `${log.workout.type} (${log.workout.duration}m, Intensity ${log.workout.intensity}/10)` : 'None'}</strong></div>
+        <div class="log-item" style="border:none; padding:4px 0;">🔋 Sleep: <strong>${log.recovery.sleep} hrs</strong> | Energy: <strong>${log.recovery.energy}/10</strong></div>
+        <div class="log-item" style="border:none; padding:4px 0;">❄️ Zyns: <strong>${log.zyn} pouches</strong> | 🌿 Vape: <strong>${log.vape} bowls</strong></div>
+        <div class="log-item" style="border:none; padding:4px 0;">💪 Pushups: <strong>${log.pushups || 0} reps</strong></div>
+      `;
+    }
+
+    renderUI();
+  </script>
+</body>
+</html>

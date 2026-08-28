@@ -341,9 +341,9 @@
       <div class="card-title">💾 Backup & Data Management</div>
       <button class="btn btn-secondary" onclick="exportData()">Export JSON Backup</button>
       
-      <!-- Added Import JSON Elements -->
+      <!-- Import JSON Elements with fix applied -->
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="document.getElementById('importFile').click()">Import JSON Backup</button>
-      <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+      <input type="file" id="importFile" style="display: none;" accept="*/*" onchange="importData(event)">[cite: 7]
       
       <button class="btn btn-secondary" style="background: #ef444420; color: #ef4444; margin-top: 8px;" onclick="clearData()">Reset All Data</button>
     </div>
@@ -378,7 +378,7 @@
       return `${year}-${month}-${day}`;
     };
 
-    // Load data or initialize empty state
+    // Load data or initialize empty state[cite: 7]
     let appData = JSON.parse(localStorage.getItem('pulse_app_data')) || {
       logs: {},
       presets: [
@@ -386,15 +386,15 @@
         { name: "Protein Shake", cals: 200, protein: 30 },
         { name: "Beans & Mushrooms", cals: 400, protein: 20 }
       ],
-      activeLogDate: getRealCurrentDateString() // Setup initial log date
+      activeLogDate: getRealCurrentDateString() // Setup initial log date[cite: 7]
     };
 
-    // Backwards compatibility for existing data
+    // Backwards compatibility for existing data[cite: 7]
     if (!appData.activeLogDate) {
       appData.activeLogDate = getRealCurrentDateString();
     }
 
-    // Rather than returning the clock date, we return the manual active log date
+    // Rather than returning the clock date, we return the manual active log date[cite: 7]
     const getTodayKey = () => appData.activeLogDate;
 
     function getTodayLog() {
@@ -636,7 +636,7 @@
       anchor.remove();
     }
 
-    // Added Import Data Function
+    // Added Import Data Function[cite: 7]
     function importData(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -668,12 +668,12 @@
       }
     }
 
-    // Render Master UI
+    // Render Master UI[cite: 7]
     function renderUI() {
       const realDateStr = getRealCurrentDateString();
       document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-      // Handle the "Wake Up / Next Day" button visibility
+      // Handle the "Wake Up / Next Day" button visibility[cite: 7]
       const newDayBtn = document.getElementById('newDayBtn');
       if (appData.activeLogDate !== realDateStr) {
         newDayBtn.style.display = 'block';
@@ -681,13 +681,13 @@
         newDayBtn.style.display = 'none';
       }
 
-      // Display the current log target so the user always knows where data is going
+      // Display the current log target so the user always knows where data is going[cite: 7]
       document.getElementById('activeLogDisplay').innerText = `Currently logging to: ${appData.activeLogDate}`;
 
       const log = getTodayLog();
       const stats = getPast7DaysStats();
 
-      // Update Counters
+      // Update Counters[cite: 7]
       document.getElementById('headerZynCount').innerText = log.zyn;
       document.getElementById('substanceZynCount').innerText = log.zyn;
       document.getElementById('headerVapeCount').innerText = log.vape;
@@ -695,11 +695,11 @@
       document.getElementById('headerPushupCount').innerText = log.pushups || 0;
       document.getElementById('substancePushupCount').innerText = log.pushups || 0;
 
-      // Weight UI updates
+      // Weight UI updates[cite: 7]
       document.getElementById('dashWeight').innerText = log.weight ? log.weight : '--';
       document.getElementById('weightLogDisplay').innerText = log.weight ? `Logged today: ${log.weight}` : 'No weight logged today.';
 
-      // Workout Log Status & Undo
+      // Workout Log Status & Undo[cite: 7]
       const workoutStatusEl = document.getElementById('workoutLogStatus');
       if (log.workout) {
         workoutStatusEl.innerHTML = `<div style="font-size:0.85rem; color:var(--accent-green); margin-bottom:6px;">Logged: ${log.workout.type} (${log.workout.duration}m)</div><button class="btn-danger" onclick="undoWorkout()">Undo Workout</button>`;
@@ -707,7 +707,7 @@
         workoutStatusEl.innerHTML = '';
       }
 
-      // Recovery Log Status & Undo
+      // Recovery Log Status & Undo[cite: 7]
       const recoveryStatusEl = document.getElementById('recoveryLogStatus');
       if (log.recovery && log.recovery.sleep > 0) {
         recoveryStatusEl.innerHTML = `<button class="btn-danger" onclick="undoRecovery()">Undo Sleep/Recovery Log</button>`;
@@ -723,7 +723,7 @@
       document.getElementById('dashCalories').innerText = totalCals;
       document.getElementById('dashProtein').innerText = `${totalProtein}g`;
 
-      // Update 7-Day Rolling Averages
+      // Update 7-Day Rolling Averages[cite: 7]
       document.getElementById('activeDaysCount').innerText = `${stats.activeDays} days logged`;
       document.getElementById('avgWeight').innerText = stats.avgWeight;
       document.getElementById('avgSleep').innerText = `${stats.avgSleep}h`;
@@ -731,7 +731,7 @@
       document.getElementById('avgVape').innerText = stats.avgVape;
       document.getElementById('weeklyWorkouts').innerText = `${stats.workoutDaysCount}/7`;
 
-      // Weight Delta vs Average
+      // Weight Delta vs Average[cite: 7]
       if (log.weight && stats.avgWeight !== '--') {
         const diffWeight = (log.weight - parseFloat(stats.avgWeight)).toFixed(1);
         document.getElementById('deltaWeight').innerText = `${diffWeight >= 0 ? '+' : ''}${diffWeight} vs avg`;
@@ -740,7 +740,7 @@
         document.getElementById('deltaWeight').innerText = `-- vs avg`;
       }
 
-      // Calculate & Render Protein/Cals Deltas vs Averages
+      // Calculate & Render Protein/Cals Deltas vs Averages[cite: 7]
       const diffCals = totalCals - stats.avgCals;
       document.getElementById('deltaCals').innerText = `${diffCals >= 0 ? '+' : ''}${diffCals} kcal vs avg`;
 
@@ -748,7 +748,7 @@
       document.getElementById('deltaProtein').innerText = `${diffProt >= 0 ? '+' : ''}${diffProt}g vs avg`;
       document.getElementById('deltaProtein').className = `delta ${diffProt >= 0 ? 'up-good' : 'down-warn'}`;
 
-      // Render Food List & Presets with Undo capability
+      // Render Food List & Presets with Undo capability[cite: 7]
       const foodContainer = document.getElementById('todayFoodList');
       foodContainer.innerHTML = (!log.food || log.food.length === 0) ? '<span style="color:var(--text-dim);">No meals logged.</span>' : '';
       if (log.food) {
@@ -771,7 +771,7 @@
         chipContainer.appendChild(chip);
       });
 
-      // Render Dashboard Log Overview
+      // Render Dashboard Log Overview[cite: 7]
       const dashLogs = document.getElementById('dashboardLogs');
       dashLogs.innerHTML = `
         <div class="log-item" style="border:none; padding:4px 0;">⚖️ Weight: <strong>${log.weight ? log.weight : 'Not logged'}</strong></div>
